@@ -1,18 +1,31 @@
 import csv
 import re
+import warnings
 
 import pandas as pd
 import wikipedia
 
-one_hot_file = "one_hot_encoding.csv"
+warnings.filterwarnings("ignore")  # filter all warnings, html parser throws warnings after DisambiguationError
 
-def get_content(num_pages=2):
+one_hot_file = "one_hot_encoding.csv"
+stop_list_file = "StopList.txt"
+
+def get_content(num_pages=100):
     """Retrieves page contents from random Wikipedia articles"""
     all_words = set()
     all_content = []
 
     for i in range(0, num_pages):
-        content = wikipedia.page(wikipedia.random(pages=1)).content
+        page = None
+        try:
+            page = wikipedia.page(wikipedia.random(pages=1))
+        except wikipedia.exceptions.DisambiguationError as e:
+            print(e.options)
+            page = wikipedia.page(e.options[0])  # use the first suggested page
+        except wikipedia.exceptions.PageError:
+            continue
+        
+        content = page.content
         words = re.findall(r"\d*[a-zA-Z]+\d*[a-zA-Z]+\d*", content)  # extract only words, not numbers
         all_content.append(content)
         all_words.update(words)
@@ -29,7 +42,6 @@ def build_one_hot_encoding(all_words, all_content):
 
         for content in all_content:
             content_words = re.findall(r"\d*[a-zA-Z]+\d*[a-zA-Z]+\d*", content)  # extract only words, not numbers
-            content_words = set(content_words)
 
             content_one_hot = []
             for word in all_words:
@@ -43,8 +55,12 @@ def build_one_hot_encoding(all_words, all_content):
 def analyze():
     """Runs analysis on the generated one-hot encoding file"""
     df = pd.read_csv(one_hot_file)
-    print(df.head())
-    print(df.mean())
+    mean_columns = sum(df.mean())/len(df.mean())
+    
+    with open(stop_list_file, "w") as f:
+        for column in df:
+            if df[column].mean() > mean_columns:
+                f.write(f"{column}\n")
 
 
 def run():
