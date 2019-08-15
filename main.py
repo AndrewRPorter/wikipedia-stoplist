@@ -3,6 +3,7 @@ import csv
 import random
 import re
 import warnings
+from typing import List, Set, Tuple
 
 import pandas as pd
 import wikipedia
@@ -10,14 +11,18 @@ import wikipedia
 import constants
 
 warnings.filterwarnings(
-    "ignore"
-)  # filter all warnings, html parser throws warnings after DisambiguationError
+    "ignore", category=UserWarning
+)  # html parser throws warnings after DisambiguationError
 
 
-def get_content(num_pages=constants.NUM_PAGES):
-    """Retrieves page contents from random Wikipedia articles"""
-    all_words = set()  # should contain all unique values
-    all_content = []
+def get_content(num_pages: int = constants.NUM_PAGES) -> Tuple[Set[str], List[str]]:
+    """Retrieves page contents from random Wikipedia articles
+    
+    Args:
+        num_pages: maximum number of pages to generate output from
+    """
+    all_words = set()  # type: Set[str]
+    all_content = []  # type: List[str]
 
     for i in range(0, num_pages):
         page = None
@@ -48,8 +53,13 @@ def get_content(num_pages=constants.NUM_PAGES):
     return all_words, all_content
 
 
-def build_one_hot_encoding(all_words, all_content):
-    """Writes one hot encoding to csv file to be later analyzed"""
+def build_one_hot_encoding(all_words: Set[str], all_content: List[str]):
+    """Writes one hot encoding to csv file to be later analyzed
+    
+    Args:
+        all_words: unique set of all articles words
+        all_content: raw content for each article
+    """
 
     with open(constants.ONE_HOT_FILE, "w") as f:
         writer = csv.writer(f, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -69,8 +79,13 @@ def build_one_hot_encoding(all_words, all_content):
             writer.writerow(content_one_hot)
 
 
-def analyze(limit=constants.LIMIT, freq=constants.FREQ):
-    """Runs analysis on the generated one-hot encoding file"""
+def analyze(limit: int = constants.LIMIT, freq: float = constants.FREQ):
+    """Runs analysis on the generated one-hot encoding file
+    
+    Args:
+        limit: maximum number of terms allowed in StopList
+        freq: term frequeny needed for terms in StopList
+    """
     df = pd.read_csv(constants.ONE_HOT_FILE)
     mean_columns = sum(df.mean()) / len(df.mean())
     num_written = 0
