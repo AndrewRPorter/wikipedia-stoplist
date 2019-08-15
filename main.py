@@ -87,7 +87,6 @@ def analyze(limit: int = constants.LIMIT, max_freq: float = constants.FREQ):
         max_freq: term frequeny needed for terms in StopList
     """
     df = pd.read_csv(constants.ONE_HOT_FILE)
-    mean_columns = sum(df.mean()) / len(df.mean())
     num_written = 0
 
     with open(constants.STOP_LIST_FILE, "w") as f:
@@ -100,8 +99,8 @@ def analyze(limit: int = constants.LIMIT, max_freq: float = constants.FREQ):
 
             frequency = 0
             if num_miss > 0:
-                frequency = num_hit/num_miss  # avoid division by zero
-            
+                frequency = num_hit / num_miss  # avoid division by zero
+
             if frequency > max_freq:
                 f.write(f"{column.lower()}\n")
                 num_written += 1
