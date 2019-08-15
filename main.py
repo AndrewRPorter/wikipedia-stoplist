@@ -79,12 +79,12 @@ def build_one_hot_encoding(all_words: Set[str], all_content: List[str]):
             writer.writerow(content_one_hot)
 
 
-def analyze(limit: int = constants.LIMIT, freq: float = constants.FREQ):
+def analyze(limit: int = constants.LIMIT, max_freq: float = constants.FREQ):
     """Runs analysis on the generated one-hot encoding file
     
     Args:
         limit: maximum number of terms allowed in StopList
-        freq: term frequeny needed for terms in StopList
+        max_freq: term frequeny needed for terms in StopList
     """
     df = pd.read_csv(constants.ONE_HOT_FILE)
     mean_columns = sum(df.mean()) / len(df.mean())
@@ -95,16 +95,23 @@ def analyze(limit: int = constants.LIMIT, freq: float = constants.FREQ):
             if num_written == limit:
                 break
 
-            if df[column].mean() > mean_columns:
+            values = list(df[column].values)
+            num_miss, num_hit = values.count(0), values.count(1)
+
+            frequency = 0
+            if num_miss > 0:
+                frequency = num_hit/num_miss  # avoid division by zero
+            
+            if frequency > max_freq:
                 f.write(f"{column.lower()}\n")
                 num_written += 1
 
 
 def run(args: argparse.Namespace):
     """Build a stoplist from contents"""
-    all_words, all_content = get_content(num_pages=args.num)
-    build_one_hot_encoding(all_words, all_content)
-    analyze(limit=args.limit)
+    # all_words, all_content = get_content(num_pages=args.num)
+    # build_one_hot_encoding(all_words, all_content)
+    analyze(limit=args.limit, max_freq=args.freq)
 
 
 if __name__ == "__main__":
