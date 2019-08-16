@@ -1,2 +1,3 @@
 wikipedia
 pandas
+numpy

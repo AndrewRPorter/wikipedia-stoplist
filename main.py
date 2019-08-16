@@ -5,6 +5,7 @@ import re
 import warnings
 from typing import List, Set, Tuple
 
+import numpy as np
 import pandas as pd
 import wikipedia
 
@@ -140,5 +141,8 @@ if __name__ == "__main__":
         help="term frequency percentage to include in StopList",
     )
     args = parser.parse_args()
+
+    if args.freq not in np.arange(0, 1.0001, 0.0001):
+        raise ValueError("invalid frequency provided")
 
     run(args)
