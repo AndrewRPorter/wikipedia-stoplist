@@ -108,8 +108,8 @@ def analyze(limit: int = constants.LIMIT, max_freq: float = constants.FREQ):
 
 def run(args: argparse.Namespace):
     """Build a stoplist from contents"""
-    # all_words, all_content = get_content(num_pages=args.num)
-    # build_one_hot_encoding(all_words, all_content)
+    all_words, all_content = get_content(num_pages=args.num)
+    build_one_hot_encoding(all_words, all_content)
     analyze(limit=args.limit, max_freq=args.freq)
 
 
@@ -137,7 +137,6 @@ if __name__ == "__main__":
         dest="freq",
         type=float,
         default=constants.FREQ,
-        choices=range(0, 2),
         help="term frequency percentage to include in StopList",
     )
     args = parser.parse_args()
