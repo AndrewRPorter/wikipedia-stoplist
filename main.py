@@ -96,11 +96,9 @@ def analyze(limit: int = constants.LIMIT, max_freq: float = constants.FREQ):
                 break
 
             values = list(df[column].values)
-            num_miss, num_hit = values.count(0), values.count(1)
+            num_hit = values.count(1)
 
-            frequency = 0
-            if num_miss > 0:
-                frequency = num_hit / num_miss  # avoid division by zero
+            frequency = num_hit / len(values)
 
             if frequency > max_freq:
                 f.write(f"{column.lower()}\n")
