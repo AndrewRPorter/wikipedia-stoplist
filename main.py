@@ -40,9 +40,11 @@ def get_content(num_pages: int = constants.NUM_PAGES) -> Tuple[Set[str], List[st
                     page = wikipedia.page(topic)
                 except wikipedia.exceptions.DisambiguationError:
                     # some topics always throw DisambiguationError like "Reference point"
-                    pass
+                    continue
                 except wikipedia.exceptions.PageError:
-                    pass
+                    continue
+            except wikipedia.exceptions.PageError:
+                continue
 
         content = page.content
         words = re.findall(
@@ -54,44 +56,48 @@ def get_content(num_pages: int = constants.NUM_PAGES) -> Tuple[Set[str], List[st
     return all_words, all_content
 
 
-def build_one_hot_encoding(all_words: Set[str], all_content: List[str]):
-    """Writes one hot encoding to csv file to be later analyzed
+def build_one_hot_encoding(all_words: Set[str], all_content: List[str]) -> pd.DataFrame:
+    """Creates a DataFrame that contains one hot encoding data
     
     Args:
         all_words: unique set of all articles words
         all_content: raw content for each article
     """
 
-    with open(constants.ONE_HOT_FILE, "w") as f:
-        writer = csv.writer(f, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow(all_words)
+    df = pd.DataFrame(columns=all_words)
 
-        for content in all_content:
-            content_words = re.findall(
-                r"\d*[a-zA-Z]+\d*[a-zA-Z]+\d*", content
-            )  # extract only words, not numbers
+    for content in all_content:
+        content_words = re.findall(
+            r"\d*[a-zA-Z]+\d*[a-zA-Z]+\d*", content
+        )  # extract only words, not numbers
 
-            content_one_hot = []
-            for word in all_words:
-                if word in content_words:
-                    content_one_hot.append(1)
-                else:
-                    content_one_hot.append(0)
-            writer.writerow(content_one_hot)
+        content_one_hot = []
+        for word in all_words:
+            if word in content_words:
+                content_one_hot.append(1)
+            else:
+                content_one_hot.append(0)
+        df.loc[len(df)] = content_one_hot
+
+    return df
 
 
-def analyze(limit: int = constants.LIMIT, max_freq: float = constants.FREQ):
-    """Runs analysis on the generated one-hot encoding file
+def analyze(
+    encoding: pd.DataFrame,
+    limit: int = constants.LIMIT,
+    max_freq: float = constants.FREQ,
+):
+    """Runs analysis on the generated one-hot encoding data
     
     Args:
+        encoding: DataFrame containing one hot encoding data
         limit: maximum number of terms allowed in StopList
         max_freq: term frequeny needed for terms in StopList
     """
-    df = pd.read_csv(constants.ONE_HOT_FILE)
     num_written = 0
 
     with open(constants.STOP_LIST_FILE, "w") as f:
-        for column in df:
+        for column in encoding:
             if num_written == limit:
                 break
 
@@ -108,8 +114,8 @@ def analyze(limit: int = constants.LIMIT, max_freq: float = constants.FREQ):
 def run(args: argparse.Namespace):
     """Build a stoplist from contents"""
     all_words, all_content = get_content(num_pages=args.num)
-    build_one_hot_encoding(all_words, all_content)
-    analyze(limit=args.limit, max_freq=args.freq)
+    encoding = build_one_hot_encoding(all_words, all_content)
+    analyze(encoding, limit=args.limit, max_freq=args.freq)
 
 
 if __name__ == "__main__":
