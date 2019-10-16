@@ -101,7 +101,7 @@ def analyze(
             if num_written == limit:
                 break
 
-            values = list(df[column].values)
+            values = list(encoding[column].values)
             num_hit = values.count(1)
 
             frequency = num_hit / len(values)
