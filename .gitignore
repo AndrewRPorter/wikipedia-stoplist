@@ -1,6 +1,6 @@
 # Ignoring project generated files
-one_hot_encoding.csv
-StopList.txt
+*.csv
+*.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

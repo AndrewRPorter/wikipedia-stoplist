@@ -1,5 +1,5 @@
 import argparse
-import csv
+import os
 import random
 import re
 import warnings
@@ -11,9 +11,7 @@ import wikipedia
 
 import constants
 
-warnings.filterwarnings(
-    "ignore", category=UserWarning
-)  # html parser throws warnings after DisambiguationError
+warnings.filterwarnings("ignore", category=UserWarning)  # html parser throws warnings after DisambiguationError
 
 
 def get_content(num_pages: int = constants.NUM_PAGES) -> Tuple[Set[str], List[str]]:
@@ -33,9 +31,7 @@ def get_content(num_pages: int = constants.NUM_PAGES) -> Tuple[Set[str], List[st
                 topic = wikipedia.search(wikipedia.random(pages=1), results=1)
                 page = wikipedia.page(topic)
             except wikipedia.exceptions.DisambiguationError as e:
-                topic = wikipedia.search(
-                    random.choice(e.options), results=1
-                )  # use the first suggested page
+                topic = wikipedia.search(random.choice(e.options), results=1)  # use the first suggested page
                 try:
                     page = wikipedia.page(topic)
                 except wikipedia.exceptions.DisambiguationError:
@@ -45,11 +41,11 @@ def get_content(num_pages: int = constants.NUM_PAGES) -> Tuple[Set[str], List[st
                     continue
             except wikipedia.exceptions.PageError:
                 continue
+            except Exception:
+                continue
 
         content = page.content
-        words = re.findall(
-            r"\d*[a-zA-Z]+\d*[a-zA-Z]+\d*", content
-        )  # extract only words, not numbers
+        words = re.findall(r"\d*[a-zA-Z]+\d*[a-zA-Z]+\d*", content)  # extract only words, not numbers
         all_content.append(content)
         all_words.update(words)
 
@@ -67,9 +63,7 @@ def build_one_hot_encoding(all_words: Set[str], all_content: List[str]) -> pd.Da
     df = pd.DataFrame(columns=all_words)
 
     for content in all_content:
-        content_words = re.findall(
-            r"\d*[a-zA-Z]+\d*[a-zA-Z]+\d*", content
-        )  # extract only words, not numbers
+        content_words = re.findall(r"\d*[a-zA-Z]+\d*[a-zA-Z]+\d*", content)  # extract only words, not numbers
 
         content_one_hot = []
         for word in all_words:
@@ -79,14 +73,12 @@ def build_one_hot_encoding(all_words: Set[str], all_content: List[str]) -> pd.Da
                 content_one_hot.append(0)
         df.loc[len(df)] = content_one_hot
 
+    df.to_csv("output.csv", sep=",", index=False)  # write to file to cache results
+
     return df
 
 
-def analyze(
-    encoding: pd.DataFrame,
-    limit: int = constants.LIMIT,
-    max_freq: float = constants.FREQ,
-):
+def analyze(encoding: pd.DataFrame, limit: int = constants.LIMIT, max_freq: float = constants.FREQ):
     """Runs analysis on the generated one-hot encoding data
     
     Args:
@@ -120,6 +112,7 @@ def run(args: argparse.Namespace):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--input", dest="input_file", type=str, help="Input one-hot encoding to analayze")
     parser.add_argument(
         "-n",
         "--num-pages",
@@ -149,4 +142,9 @@ if __name__ == "__main__":
     if args.freq not in np.arange(0, 1.0001, 0.0001):
         raise ValueError("invalid frequency provided")
 
-    run(args)
+    if args.input_file:
+        if not os.path.isfile(args.input_file):
+            raise FileNotFoundError(f"cannot open {args.input_file}")
+        analyze(pd.read_csv(args.input_file), limit=args.limit, max_freq=args.freq)
+    else:
+        run(args)
